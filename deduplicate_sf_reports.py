@@ -1,29 +1,3 @@
-"""
-deduplicate_sf_reports.py
-
-Removes bidirectional/redundant row pairs from Screaming Frog's
-"Near Duplicates" and "Semantically Similar" export CSVs.
-
-For near duplicates, each pair (A→B) and (B→A) appears twice.
-For semantically similar, each pair (A→B) and (B→A) may also appear twice.
-This script keeps only the first occurrence of each unordered pair.
-
-Usage:
-    python deduplicate_sf_reports.py
-
-Place this script in the same folder as your CSV exports, or pass paths
-via the constants below. The script will process whichever files it finds.
-
-Expected filenames (Screaming Frog defaults):
-    near_duplicates_report.csv
-    semantically_similar_report.csv
-
-Output files will be written alongside the originals with "_deduped" appended
-to the filename stem, e.g.:
-    near_duplicates_report_deduped.csv
-    semantically_similar_report_deduped.csv
-"""
-
 import csv
 import os
 import sys
