@@ -1,4 +1,4 @@
-# SF Duplicate Pair Remover
+# Screaming Frog Duplicate Pair Remover
 
 Screaming Frog's Near Duplicates and Semantically Similar exports list every pair twice -- once in each direction. This script removes the mirror rows so each pair appears only once.
 
