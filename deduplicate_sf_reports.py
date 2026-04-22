@@ -10,8 +10,15 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 
-NEAR_DUPES_FILENAME = "near_duplicates_report.csv"
-SEM_SIM_FILENAME = "semantically_similar_report.csv"
+# Each report accepts multiple possible filenames; the first one found wins.
+NEAR_DUPES_FILENAMES = [
+    "near_duplicates_report.csv",
+    "content_near_duplicates.csv",
+]
+SEM_SIM_FILENAMES = [
+    "semantically_similar_report.csv",
+    "content_semantically_similar.csv",
+]
 
 # Column names as exported by Screaming Frog (case-sensitive)
 NEAR_DUPES_ADDRESS_COL = "Address"
@@ -94,14 +101,22 @@ def process_file(
 # Entry point
 # ---------------------------------------------------------------------------
 
+def find_first_existing(filenames: list[str]) -> Path | None:
+    for name in filenames:
+        candidate = SCRIPT_DIR / name
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def main() -> None:
     print("Screaming Frog Report Deduplicator")
     print("=" * 40)
 
     found_any = False
 
-    near_dupes_path = SCRIPT_DIR / NEAR_DUPES_FILENAME
-    if near_dupes_path.exists():
+    near_dupes_path = find_first_existing(NEAR_DUPES_FILENAMES)
+    if near_dupes_path is not None:
         found_any = True
         process_file(
             filepath=near_dupes_path,
@@ -111,8 +126,8 @@ def main() -> None:
         )
         print()
 
-    sem_sim_path = SCRIPT_DIR / SEM_SIM_FILENAME
-    if sem_sim_path.exists():
+    sem_sim_path = find_first_existing(SEM_SIM_FILENAMES)
+    if sem_sim_path is not None:
         found_any = True
         process_file(
             filepath=sem_sim_path,
@@ -123,11 +138,12 @@ def main() -> None:
         print()
 
     if not found_any:
+        all_names = NEAR_DUPES_FILENAMES + SEM_SIM_FILENAMES
+        expected_list = "\n".join(f"  {SCRIPT_DIR / name}" for name in all_names)
         print(
             "No input files found.\n"
-            f"Expected one or both of:\n"
-            f"  {SCRIPT_DIR / NEAR_DUPES_FILENAME}\n"
-            f"  {SCRIPT_DIR / SEM_SIM_FILENAME}\n\n"
+            f"Expected one of:\n"
+            f"{expected_list}\n\n"
             "Place this script in the same folder as your CSV exports and re-run."
         )
         sys.exit(1)
