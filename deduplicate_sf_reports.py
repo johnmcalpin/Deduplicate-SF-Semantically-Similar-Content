@@ -1,6 +1,5 @@
 import csv
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 
@@ -42,15 +41,21 @@ def cluster_pairs(
     pair_col: str,
     score_col: str,
 ) -> tuple[list[tuple], dict[str, dict]]:
-    edge_data: dict[frozenset, tuple] = {}
-    first_seen_idx: dict[str, int] = {}
+    seen_pairs: set[frozenset] = set()
+    address_groups: dict[str, list] = {}
+    insertion_order: list[str] = []
     primary_side_row: dict[str, dict] = {}
 
-    for i, row in enumerate(rows):
+    for row in rows:
         a = row.get(address_col, "")
         b = row.get(pair_col, "")
         if not a or not b or a == b:
             continue
+
+        pair = frozenset([a, b])
+        if pair in seen_pairs:
+            continue
+        seen_pairs.add(pair)
 
         score_str = row.get(score_col, "") if score_col else ""
         try:
@@ -58,42 +63,17 @@ def cluster_pairs(
         except ValueError:
             score_float = 0.0
 
-        pair = frozenset([a, b])
-        if pair not in edge_data:
-            edge_data[pair] = (score_str, score_float, row)
-
-        if a not in first_seen_idx:
-            first_seen_idx[a] = i
-        if b not in first_seen_idx:
-            first_seen_idx[b] = i
-        if a not in primary_side_row:
+        if a not in address_groups:
+            address_groups[a] = []
+            insertion_order.append(a)
             primary_side_row[a] = row
+        address_groups[a].append((b, score_str, score_float, row))
 
-    remaining = set(edge_data.keys())
     groups: list[tuple] = []
-
-    while remaining:
-        degree: dict[str, int] = defaultdict(int)
-        for edge in remaining:
-            for u in edge:
-                degree[u] += 1
-
-        # Highest degree first; earliest-seen wins ties for deterministic output.
-        primary = max(
-            degree.keys(),
-            key=lambda u: (degree[u], -first_seen_idx.get(u, 10**9)),
-        )
-
-        neighbors = []
-        for edge in list(remaining):
-            if primary in edge:
-                other = next(iter(edge - {primary}))
-                score_str, score_float, source_row = edge_data[edge]
-                neighbors.append((other, score_str, score_float, source_row))
-                remaining.discard(edge)
-
+    for address in insertion_order:
+        neighbors = address_groups[address]
         neighbors.sort(key=lambda x: -x[2])
-        groups.append((primary, neighbors))
+        groups.append((address, neighbors))
 
     return groups, primary_side_row
 
